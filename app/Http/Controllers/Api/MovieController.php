@@ -20,7 +20,7 @@ class MovieController extends Controller
      */
     public function index()
     {   
-        return Movie::all();
+        return Movie::paginate(10);
     }
 
     /**
@@ -42,7 +42,7 @@ class MovieController extends Controller
      */
     public function show($id)
     {
-        return Movie::findOrFail($id)->with('genre')->first();
+        return Movie::where('id', $id)->with('genre')->first();
     }
 
     /**
