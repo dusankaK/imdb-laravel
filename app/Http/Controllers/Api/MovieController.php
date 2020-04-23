@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Movie;
 use App\MovieReaction;
 use App\User;
+use App\Comment;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 
@@ -130,7 +131,7 @@ class MovieController extends Controller
      */
     public function show($id)
     {
-        $movie = Movie::with('genres', 'reactions')->findOrFail($id);
+        $movie = Movie::with('genres', 'reactions', 'comments')->findOrFail($id);
         $movie->visit_count += 1;
         $movie->save();
         return $movie;
