@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
         for ($i = 0; $i < 2; $i++) {
             foreach(App\Movie::all() as $movie) {
             $genre = App\Genre::find(rand(1, 10));
-            $movie->genre()->attach($genre->id);
+            $movie->genres()->attach($genre->id);
             $movie->save();
             }
         }
