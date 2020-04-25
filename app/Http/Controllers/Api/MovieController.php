@@ -52,7 +52,7 @@ class MovieController extends Controller
 
         $movie = Movie::findOrFail($request->movie_id);
 
-        $reaction = MovieReaction::firstOrCreate([
+        $reaction = MovieReaction::updateOrCreate([
             'movie_id' => $movie->id,
             'user_id' => auth()->user()->id
         ], [
@@ -90,9 +90,10 @@ class MovieController extends Controller
      */
     public function show($id)
     {
-        $movie = Movie::with('genres', 'reactions', 'comments')->findOrFail($id);
+        $movie = Movie::with('genres', 'comments')->findOrFail($id);
         $movie->visit_count += 1;
         $movie->save();
+        $movie->setRelation('comments', $movie->comments()->paginate(2));
         return $movie;
         
     }
