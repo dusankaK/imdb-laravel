@@ -72,6 +72,27 @@ class MovieController extends Controller
     }
 
     /**
+     * Handle incoming watch mark. Store new or update existing one
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function handleWatchMark(Request $request)
+    {
+        $movie_id = $request->movie_id;
+        $user = User::with('watchedMovies')->find(auth()->user()->id);
+        $hasWatched = $user->watchedMovies->contains($movie_id);
+
+        if ($hasWatched) {
+            $user->watchedMovies()->detach($movie_id);
+            return response()->json(['message' => 'Deleted from watchlist.', 'watched' => false], 200);
+        }
+
+        $user->watchedMovies()->attach($movie_id);
+        return response()->json(['message' => 'Added to watchlist.', 'watched' => true], 200);
+    }
+
+    /**
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -90,12 +111,18 @@ class MovieController extends Controller
      */
     public function show($id)
     {
-        $movie = Movie::with('genres', 'comments')->findOrFail($id);
+        $movie = Movie::with('genres')->findOrFail($id);
         $movie->visit_count += 1;
         $movie->save();
         $movie->setRelation('comments', $movie->comments()->paginate(2));
-        return $movie;
+        //return $movie;
         
+        if ($movie->usersWhoWatched()->where('user_id', auth()->user()->id)->exists()) 
+        {
+            return response()->json(['movie' => $movie, 'watched' => true], 200);
+        }
+
+        return response()->json(['movie' => $movie, 'watched' => false], 200);
     }
 
     /**
