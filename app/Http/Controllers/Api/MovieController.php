@@ -37,8 +37,14 @@ class MovieController extends Controller
         if($request->search) { 
             $query->where('title', 'LIKE', "%$request->search%");
         }
+
+        if($request->popular == true) {
+            return Movie::orderBy('likes', 'desc')->take(10)->get();
+        }
         
         return $query->paginate(10);
+
+        
     }
 
     /**
