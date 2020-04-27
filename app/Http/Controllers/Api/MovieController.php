@@ -100,6 +100,19 @@ class MovieController extends Controller
 
         $user->watchedMovies()->attach($movie_id);
         return response()->json(['message' => 'Added to watchlist.', 'watched' => true], 200);
+    } 
+
+
+    public function relatedMovies(Request $request)
+    {
+        $genres = $request->genres;
+
+        return Movie::with('genres')
+            ->whereHas('genres', function ($q) use ($genres) {
+                $q->whereIn('genres.name', [$genres]);
+            })
+            ->take(10)
+            ->get();
     }
 
     /**

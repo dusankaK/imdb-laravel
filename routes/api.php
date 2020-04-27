@@ -28,4 +28,6 @@ Route::apiResource('movies', 'Api\MovieController');
 Route::get('genres', 'Api\GenreController@index');
 Route::post('movies/watchlist', 'Api\MovieController@handleWatchMark'); 
 Route::post('movies/reactions', 'Api\MovieController@handleReaction'); 
+Route::post('movies/related', 'Api\MovieController@relatedMovies'); 
+
 Route::resource('comments', 'CommentController');
