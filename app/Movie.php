@@ -9,7 +9,11 @@ use App\Comment;
 use App\MovieReaction;
 
 class Movie extends Model
-{
+{   
+    protected $guarded = [
+        'id'
+    ];
+
     public function genres() 
     {
         return $this->belongsToMany(Genre::class);
