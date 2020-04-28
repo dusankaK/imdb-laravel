@@ -128,7 +128,7 @@ class MovieController extends Controller
         $movie = Movie::create($movData);
 
         foreach ($genData as $genreId) {
-            DB::insert('insert into genre_movie (genre_id, movie_id) values (?, ?)', [$genreId, $movie->id]);
+            $movie->genres()->attach($genreId);
         }
 
         return response()->json(['message' => 'Movie ' . $movie->title . ' added successfully.'], 200);
@@ -146,14 +146,11 @@ class MovieController extends Controller
         $movie->visit_count += 1;
         $movie->save();
         $movie->setRelation('comments', $movie->comments()->paginate(2));
-        //return $movie;
         
-        if ($movie->usersWhoWatched()->where('user_id', auth()->user()->id)->exists()) 
-        {
-            return response()->json(['movie' => $movie, 'watched' => true], 200);
-        }
-
-        return response()->json(['movie' => $movie, 'watched' => false], 200);
+        return response()->json([
+            'movie' => $movie,
+            'watched' => $movie->usersWhoWatched()->where('user_id', auth()->user()->id)->exists(),
+          ]);
     }
 
     /**
