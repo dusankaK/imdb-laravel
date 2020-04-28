@@ -22,7 +22,7 @@ class GenreTableSeeder extends Seeder
             'horror',
             'sci-fi',
             'war',
-            'westerns'
+            'western'
         ];
 
         foreach($genres as $genre) 

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Movie;
+use App\MovieReaction;
+use App\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 
@@ -23,12 +25,12 @@ class MovieController extends Controller
     public function index(Request $request)
     {   
         if($request->search && !$request->genre) {
-            return Movie::where('title', 'LIKE', "%$request->search%")->paginate(10);
+            return Movie::with('reactions')->where('title', 'LIKE', "%$request->search%")->paginate(10);
         }
 
         if($request->genre && !$request->search) {
             $genres = explode(",", $request->genre);
-            return Movie::with('genres')
+            return Movie::with('genres', 'reactions')
                 ->whereHas('genres', function($q) use ($genres) {
                     $q->whereIn('genres.id', $genres);
                 })->paginate(10);
@@ -36,14 +38,77 @@ class MovieController extends Controller
 
         if($request->genre && $request->search) {
             $genres = explode(",", $request->genre);
-            return Movie::with('genres')
+            return Movie::with('genres', 'reactions')
                 ->whereHas('genres', function($q) use ($genres) {
                     $q->whereIn('genres.id', $genres);
                 })
                 ->where('title', 'LIKE', "%$request->search%")->paginate(10);
         }
 
-        return Movie::with('genres')->paginate(10);
+        return Movie::with('genres', 'reactions')->paginate(10);
+    }
+
+    /**
+     * Handle incoming movie reaction. Store new or update existing one
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function handleReaction(Request $request)
+    {
+        $uid = auth()->user()->id;
+        $mid = $request->movie_id;
+        $movie = Movie::find($mid);
+        $reaction = MovieReaction::where('movie_id', $mid)
+            ->where('user_id', $uid)
+            ->first();
+
+        if ($request->reaction == 'like') {
+            if (!$reaction) {
+                $nr = new MovieReaction;
+                $nr->movie_id = $mid;
+                $nr->user_id = $uid;
+                $nr->liked = 1;
+                $nr->save();
+
+                $movie->likes = $movie->likes + 1;
+                $movie->save();
+                return response()->json(['message' => 'Movie ' . $movie->title . ' liked.'],  200);
+            }
+
+            if ($reaction->liked) {
+                return response()->json(['message' => 'Movie ' . $movie->title . ' already liked.'],  200);
+            }
+
+            $reaction->liked = 1;
+            $movie->likes = $movie->likes + 1;
+            $reaction->save();
+            $movie->save();
+            return response()->json(['message' => 'Movie ' . $movie->title . ' liked.'],  200);
+        }
+        if ($request->reaction == 'dislike') {
+            if (!$reaction) {
+                $nr = new MovieReaction;
+                $nr->movie_id = $mid;
+                $nr->user_id = $uid;
+                $nr->disliked = 1;
+                $nr->save();
+
+                $movie->dislikes = $movie->dislikes + 1;
+                $movie->save();
+                return response()->json(['message' => 'Movie ' . $movie->title . ' disliked.'],  200);
+            }
+
+            if ($reaction->disliked) {
+                return response()->json(['message' => 'Movie ' . $movie->title . ' already disliked.'],  200);
+            }
+
+            $reaction->disliked = 1;
+            $movie->dislikes = $movie->dislikes + 1;
+            $reaction->save();
+            $movie->save();
+            return response()->json(['message' => 'Movie ' . $movie->title . ' disliked.'],  200);
+        }
     }
 
     /**
@@ -65,7 +130,7 @@ class MovieController extends Controller
      */
     public function show($id)
     {
-        return Movie::where('id', $id)->with('genres')->first();
+        return Movie::with('genres', 'reactions')->findOrFail($id);
     }
 
     /**
