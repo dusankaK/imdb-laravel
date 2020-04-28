@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use Illuminate\Http\Request;
+use App\Http\Requests\MovieRequest;
 use App\Http\Controllers\Controller;
 use App\Movie;
 use App\MovieReaction;
 use App\User;
 use App\Comment;
+use App\Genre;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
+
 
 
 class MovieController extends Controller
@@ -96,6 +100,19 @@ class MovieController extends Controller
 
         $user->watchedMovies()->attach($movie_id);
         return response()->json(['message' => 'Added to watchlist.', 'watched' => true], 200);
+    } 
+
+
+    public function relatedMovies(Request $request)
+    {
+        $genres = $request->genres;
+
+        return Movie::with('genres')
+            ->whereHas('genres', function ($q) use ($genres) {
+                $q->whereIn('genres.name', [$genres]);
+            })
+            ->take(10)
+            ->get();
     }
 
     /**
@@ -104,9 +121,17 @@ class MovieController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(MovieRequest $request)
     {
-        //
+        $movData = $request->only('title', 'description', 'image_url');
+        $genData = $request->genres;
+        $movie = Movie::create($movData);
+
+        foreach ($genData as $genreId) {
+            $movie->genres()->attach($genreId);
+        }
+
+        return response()->json(['message' => 'Movie ' . $movie->title . ' added successfully.'], 200);
     }
 
     /**
@@ -121,14 +146,11 @@ class MovieController extends Controller
         $movie->visit_count += 1;
         $movie->save();
         $movie->setRelation('comments', $movie->comments()->paginate(2));
-        //return $movie;
         
-        if ($movie->usersWhoWatched()->where('user_id', auth()->user()->id)->exists()) 
-        {
-            return response()->json(['movie' => $movie, 'watched' => true], 200);
-        }
-
-        return response()->json(['movie' => $movie, 'watched' => false], 200);
+        return response()->json([
+            'movie' => $movie,
+            'watched' => $movie->usersWhoWatched()->where('user_id', auth()->user()->id)->exists(),
+          ]);
     }
 
     /**
