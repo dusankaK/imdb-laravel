@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use Illuminate\Http\Request;
 use App\Http\Requests\MovieRequest;
 use App\Http\Controllers\Controller;
+use App\Mail\NewMovieMail;
 use App\Movie;
 use App\MovieReaction;
 use App\User;
@@ -12,6 +13,7 @@ use App\Comment;
 use App\Genre;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 
 
@@ -130,6 +132,8 @@ class MovieController extends Controller
         foreach ($genData as $genreId) {
             $movie->genres()->attach($genreId);
         }
+
+        Mail::to('duska@gmail.com')->send(new NewMovieMail($movie));
 
         return response()->json(['message' => 'Movie ' . $movie->title . ' added successfully.'], 200);
     }
