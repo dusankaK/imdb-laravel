@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Movie;
 use App\MovieReaction;
 use App\User;
+use App\Comment;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 
@@ -24,28 +25,20 @@ class MovieController extends Controller
      */
     public function index(Request $request)
     {   
-        if($request->search && !$request->genre) {
-            return Movie::with('reactions')->where('title', 'LIKE', "%$request->search%")->paginate(10);
-        }
 
-        if($request->genre && !$request->search) {
-            $genres = explode(",", $request->genre);
-            return Movie::with('genres', 'reactions')
-                ->whereHas('genres', function($q) use ($genres) {
-                    $q->whereIn('genres.id', $genres);
-                })->paginate(10);
-        }
+        $query = Movie::with('genres', 'reactions'); 
 
-        if($request->genre && $request->search) {
-            $genres = explode(",", $request->genre);
-            return Movie::with('genres', 'reactions')
-                ->whereHas('genres', function($q) use ($genres) {
-                    $q->whereIn('genres.id', $genres);
-                })
-                ->where('title', 'LIKE', "%$request->search%")->paginate(10);
+        if($request->genre) {
+            $query->whereHas('genres', function($q) use ($request) {
+                    $q->whereIn('genres.id', explode(",", $request->genre));
+            });
         }
-
-        return Movie::with('genres', 'reactions')->paginate(10);
+    
+        if($request->search) { 
+            $query->where('title', 'LIKE', "%$request->search%");
+        }
+        
+        return $query->paginate(10);
     }
 
     /**
@@ -56,59 +49,26 @@ class MovieController extends Controller
      */
     public function handleReaction(Request $request)
     {
-        $uid = auth()->user()->id;
-        $mid = $request->movie_id;
-        $movie = Movie::find($mid);
-        $reaction = MovieReaction::where('movie_id', $mid)
-            ->where('user_id', $uid)
-            ->first();
 
-        if ($request->reaction == 'like') {
-            if (!$reaction) {
-                $nr = new MovieReaction;
-                $nr->movie_id = $mid;
-                $nr->user_id = $uid;
-                $nr->liked = 1;
-                $nr->save();
+        $movie = Movie::findOrFail($request->movie_id);
 
-                $movie->likes = $movie->likes + 1;
-                $movie->save();
-                return response()->json(['message' => 'Movie ' . $movie->title . ' liked.'],  200);
-            }
+        $reaction = MovieReaction::updateOrCreate([
+            'movie_id' => $movie->id,
+            'user_id' => auth()->user()->id
+        ], [
+            'liked' => $request->reaction == 'like' ? 1 : 0,
+            'disliked' => $request->reaction == 'like' ? 0 : 1
+        ]);
 
-            if ($reaction->liked) {
-                return response()->json(['message' => 'Movie ' . $movie->title . ' already liked.'],  200);
-            }
+        if ($reaction->wasRecentlyCreated) {
+            $movie->increment($request->reaction == 'like' ? 'likes' : 'dislikes');
 
-            $reaction->liked = 1;
-            $movie->likes = $movie->likes + 1;
-            $reaction->save();
-            $movie->save();
-            return response()->json(['message' => 'Movie ' . $movie->title . ' liked.'],  200);
+            $message = $request->reaction == 'like' ? "Movie {$movie->title} liked." : "Movie {$movie->title} disliked.";
+        } else {
+            $message = $request->reaction == 'like' ? "Movie {$movie->title} already liked." : "Movie {$movie->title} already disliked.";
         }
-        if ($request->reaction == 'dislike') {
-            if (!$reaction) {
-                $nr = new MovieReaction;
-                $nr->movie_id = $mid;
-                $nr->user_id = $uid;
-                $nr->disliked = 1;
-                $nr->save();
-
-                $movie->dislikes = $movie->dislikes + 1;
-                $movie->save();
-                return response()->json(['message' => 'Movie ' . $movie->title . ' disliked.'],  200);
-            }
-
-            if ($reaction->disliked) {
-                return response()->json(['message' => 'Movie ' . $movie->title . ' already disliked.'],  200);
-            }
-
-            $reaction->disliked = 1;
-            $movie->dislikes = $movie->dislikes + 1;
-            $reaction->save();
-            $movie->save();
-            return response()->json(['message' => 'Movie ' . $movie->title . ' disliked.'],  200);
-        }
+        
+        return response()->json(compact('message'));
     }
 
     /**
@@ -130,9 +90,10 @@ class MovieController extends Controller
      */
     public function show($id)
     {
-        $movie = Movie::with('genres', 'reactions')->findOrFail($id);
+        $movie = Movie::with('genres', 'comments')->findOrFail($id);
         $movie->visit_count += 1;
         $movie->save();
+        $movie->setRelation('comments', $movie->comments()->paginate(2));
         return $movie;
         
     }
