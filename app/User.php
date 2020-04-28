@@ -8,6 +8,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\MovieReaction;
 use App\Comment;
+use App\Movie;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -59,5 +60,9 @@ class User extends Authenticatable implements JWTSubject
     public function comments()
     {
         return $this->hasMany(Comments::class);
+    }
+    public function watchedMovies() 
+    {
+        return $this->belongsToMany(Movie::class, 'movie_user', 'user_id', 'movie_id');
     }
 }
