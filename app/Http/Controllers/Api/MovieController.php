@@ -134,7 +134,7 @@ class MovieController extends Controller
 
         event(new NewMovieAdded($movie));
 
-        return response()->json(['message' => 'Movie ' . $movie->title . ' added successfully.'], 200);
+        return response()->json(['message' => 'Movie ' . $movie->title . ' added successfully.', 'movie' => $movie], 200);
     }
 
     /**
