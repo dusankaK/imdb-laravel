@@ -130,7 +130,11 @@ class MovieController extends Controller
      */
     public function show($id)
     {
-        return Movie::with('genres', 'reactions')->findOrFail($id);
+        $movie = Movie::with('genres', 'reactions')->findOrFail($id);
+        $movie->visit_count += 1;
+        $movie->save();
+        return $movie;
+        
     }
 
     /**
