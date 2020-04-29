@@ -27,7 +27,13 @@ class SendNewMovieMail implements ShouldQueue
      * @return void
      */
     public function handle(NewMovieAdded $event)
-    {
+    {   
         Mail::to('duska@gmail.com')->send(new NewMovieMail($event->movie));
+    }
+
+    public function failed(Exception $exception) 
+    {
+        // usually would send new notification to admin/user
+        info($exception);
     }
 }
