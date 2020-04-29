@@ -7,9 +7,13 @@ use App\User;
 use App\Genre;
 use App\Comment;
 use App\MovieReaction;
+use Elasticquent\ElasticquentTrait;
+
 
 class Movie extends Model
 {   
+    use ElasticquentTrait;
+
     protected $guarded = [
         'id'
     ];
