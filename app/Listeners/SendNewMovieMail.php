@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class SendNewMovieMail
+class SendNewMovieMail implements ShouldQueue
 {
     /**
      * Create the event listener.
