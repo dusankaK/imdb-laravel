@@ -1,5 +1,6 @@
 <?php
 
+
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
@@ -37,4 +38,31 @@ class Movie extends Model
     {
         return $this->belongsToMany(User::class, 'movie_user', 'movie_id', 'user_id');
     }
+
+    protected $mappingProperties = array(
+        'title' => [
+            'type' => 'string',
+            "analyzer" => "standard",
+        ],
+        'description' => [
+            'type' => 'string',
+            "analyzer" => "standard",
+        ],
+        'image_url' => [
+            'type' => 'string',
+            "analyzer" => "standard",
+        ],
+        'likes' => [
+            'type' => 'long',
+            "analyzer" => "standard",
+        ],
+        'dislikes' => [
+            'type' => 'long',
+            "analyzer" => "standard",
+        ],
+        'visit_count' => [
+            'type' => 'long',
+            "analyzer" => "standard",
+        ]
+        );
 }

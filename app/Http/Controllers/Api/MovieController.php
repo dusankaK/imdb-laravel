@@ -30,27 +30,22 @@ class MovieController extends Controller
      */
     public function index(Request $request)
     {   
-
-        $query = Movie::with('genres', 'reactions'); 
-
-        if($request->genre) {
-            $query->whereHas('genres', function($q) use ($request) {
-                    $q->whereIn('genres.id', explode(",", $request->genre));
-            });
+        if ($request->elastic === true) {
+            $movies = Movie::searchByQuery(['match' => ['title' => $request->search]]);
+            return response()->json(['movies' => $movies, 'elastic' => true], 200);
         }
     
-        if($request->search) { 
-            $query->where('title', 'LIKE', "%$request->search%");
+        return Movie::query()
+            ->when($request->popular === true, function ($query) {
+                return $query->orderBy('likes', 'desc');
+            })->when($request->search, function ($query, $value) {
+                return $query->where('title', 'like', $value . '%');
+            })->when($request->genre, function ($query, $request) {
+                return $query->whereHas('genres', function ($q) use ($request) {
+                    $q->whereIn('genres.id', explode(',', $request->genre));
+                });
+            })->paginate(10);
         }
-
-        if($request->popular == true) {
-            return Movie::orderBy('likes', 'desc')->take(10)->get();
-        }
-        
-        return $query->paginate(10);
-
-        
-    }
 
     /**
      * Handle incoming movie reaction. Store new or update existing one

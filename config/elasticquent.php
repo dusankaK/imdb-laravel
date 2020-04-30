@@ -27,6 +27,6 @@ return array(
     | Elastiquent models.
     */
 
-    'default_index' => 'my_custom_index_name',
+    'default_index' => 'movies',
 
 );
